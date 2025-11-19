@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blob Classifier - Neural Network Demo</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Neural Network Blob Classifier</h1>
+            <p>Train a neural network to classify different blob patterns</p>
+        </header>
+
+        <div class="main-content">
+            <div class="controls-panel">
+                <h2>Configuration</h2>
+                
+                <div class="control-group">
+                    <label for="datasetSelect">Dataset Type:</label>
+                    <select id="datasetSelect">
+                        <option value="diagonals">Diagonal 3-class</option>
+                        <option value="quadrant">Quadrant Blobs</option>
+                        <option value="moons">Moons</option>
+                    </select>
+                </div>
+
+                <div class="control-group" id="moonsControlsGroup" style="display: none;">
+                    <label for="moonNoise">Moon Noise/Space:</label>
+                    <input type="range" id="moonNoise" min="0.01" max="0.5" step="0.01" value="0.1">
+                    <span id="moonNoiseValue">0.10</span>
+                </div>
+
+                <div class="control-group">
+                    <label for="hiddenLayers">Hidden Layers (comma-separated, e.g., 16,32,64):</label>
+                    <input type="text" id="hiddenLayers" placeholder="e.g., 16,32,64 or leave empty for none" value="16,32">
+                </div>
+
+                <div class="control-group">
+                    <label for="learningRate">Learning Rate:</label>
+                    <input type="number" id="learningRate" min="0.0001" max="1" step="0.0001" value="0.01">
+                </div>
+
+                <div class="control-group">
+                    <label for="epochs">Epochs:</label>
+                    <input type="number" id="epochs" min="1" max="5000" step="1" value="100">
+                </div>
+
+                <div class="control-group">
+                    <label for="trainTestSplit">Train/Test Split (%):</label>
+                    <input type="number" id="trainTestSplit" min="10" max="90" step="5" value="80">
+                </div>
+
+                <div class="control-group">
+                    <label for="sampleSize">Sample Size per Class:</label>
+                    <input type="number" id="sampleSize" min="10" max="500" step="10" value="100">
+                </div>
+
+                <div class="control-group">
+                    <label for="clusterSpread">Cluster Spread (how spread out each cluster is):</label>
+                    <input type="range" id="clusterSpread" min="0.005" max="0.5" step="0.005" value="0.06">
+                    <span id="clusterSpreadValue">0.06</span>
+                </div>
+
+                <button id="trainButton" class="btn-primary">Train Network</button>
+                <button id="testButton" class="btn-secondary">Test on Test Set</button>
+            </div>
+
+            <div class="visualization-wrapper">
+                <div class="visualization-panel">
+                    <div class="canvas-container">
+                        <canvas id="trainingCanvas" width="1100" height="800"></canvas>
+                        <p class="canvas-label">Training Data + Decision Boundary</p>
+                    </div>
+                </div>
+
+                <div class="network-visualization-panel">
+                    <h2>Neural Network Architecture</h2>
+                    <canvas id="networkCanvas" width="1200" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-panel">
+            <div class="stat-item">
+                <span class="stat-label">Training Accuracy:</span>
+                <span class="stat-value" id="trainAccuracy">-</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Test Accuracy:</span>
+                <span class="stat-value" id="testAccuracy">-</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Training Loss:</span>
+                <span class="stat-value" id="trainLoss">-</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Status:</span>
+                <span class="stat-value" id="status">Ready</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Epochs:</span>
+                <span class="stat-value" id="epochCount">0</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="network.js"></script>
+    <script src="datasets.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
