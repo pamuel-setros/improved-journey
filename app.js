@@ -20,8 +20,12 @@ const elements = {
     sampleSize: document.getElementById('sampleSize'),
     clusterSpread: document.getElementById('clusterSpread'),
     clusterSpreadValue: document.getElementById('clusterSpreadValue'),
+    zoom: document.getElementById('zoom'),
+    zoomValue: document.getElementById('zoomValue'),
     trainButton: document.getElementById('trainButton'),
     testButton: document.getElementById('testButton'),
+    stopButton: document.getElementById('stopButton'),
+    resetButton: document.getElementById('resetButton'),
     trainingCanvas: document.getElementById('trainingCanvas'),
     networkCanvas: document.getElementById('networkCanvas'),
     trainAccuracy: document.getElementById('trainAccuracy'),
@@ -39,6 +43,9 @@ elements.sampleSize.addEventListener('change', generateAndDisplayDataset);
 elements.trainTestSplit.addEventListener('change', generateAndDisplayDataset);
 elements.trainButton.addEventListener('click', handleTrain);
 elements.testButton.addEventListener('click', handleTest);
+elements.stopButton.addEventListener('click', handleStop);
+elements.resetButton.addEventListener('click', handleReset);
+elements.zoom.addEventListener('input', handleZoomChange);
 
 function updateMoonNoiseValue() {
     elements.moonNoiseValue.textContent = parseFloat(elements.moonNoise.value).toFixed(2);
@@ -58,7 +65,8 @@ function drawDecisionBoundaryOverlay(canvas, network, data, labels, colors) {
     const ctx = canvas.getContext('2d');
     const width = canvas.width;
     const height = canvas.height;
-    const scale = width / 2;
+    const zoom = parseFloat(elements.zoom ? elements.zoom.value : 1) || 1;
+    const scale = (width / 2) * zoom;
     const offsetX = width / 2;
     const offsetY = height / 2;
     const resolution = 16;
@@ -112,6 +120,45 @@ function handleMoonNoiseChange() {
 function handleClusterSpreadChange() {
     elements.clusterSpreadValue.textContent = parseFloat(elements.clusterSpread.value).toFixed(3);
     generateAndDisplayDataset();
+}
+
+function handleZoomChange() {
+    elements.zoomValue.textContent = parseFloat(elements.zoom.value).toFixed(2);
+    // redraw current view with new zoom
+    if (currentDataset && trainingData) {
+        resizeCanvasToDisplaySize(elements.trainingCanvas);
+        drawDecisionBoundaryAnimated(elements.trainingCanvas, network || { predict: () => ({ predictions: [0], probabilities: [[0]] }) }, currentDataset.trainNormalized, trainingData.rawLabels, currentDataset.colors);
+    }
+}
+
+let stopRequested = false;
+
+function handleStop() {
+    if (!isTraining) return;
+    stopRequested = true;
+    elements.status.textContent = 'Stop requested...';
+}
+
+function handleReset() {
+    // stop training if running
+    stopRequested = true;
+    isTraining = false;
+    network = null;
+    elements.trainButton.disabled = false;
+    elements.testButton.disabled = false;
+    elements.stopButton.disabled = true;
+    elements.resetButton.disabled = true;
+    elements.status.textContent = 'Reset: network cleared.';
+    elements.trainAccuracy.textContent = '-';
+    elements.testAccuracy.textContent = '-';
+    elements.trainLoss.textContent = '-';
+    elements.epochCount.textContent = '0';
+
+    // redraw dataset only
+    if (currentDataset && trainingData) {
+        resizeCanvasToDisplaySize(elements.trainingCanvas);
+        drawDataset(elements.trainingCanvas, currentDataset.trainNormalized, trainingData.rawLabels, currentDataset.colors);
+    }
 }
 
 function handleDatasetChange() {
@@ -270,8 +317,19 @@ function trainNetworkAnimated(network, data, epochs) {
     return new Promise((resolve) => {
         let epoch = 0;
         let totalLoss = 0;
+        // enable stop button while training
+        elements.stopButton.disabled = false;
+        elements.resetButton.disabled = false;
+
+        stopRequested = false;
 
         function trainStep() {
+            if (stopRequested) {
+                elements.status.textContent = 'Training stopped by user.';
+                elements.stopButton.disabled = true;
+                resolve();
+                return;
+            }
             if (epoch < epochs) {
                 const forward = network.forward(data.X);
                 network.backward(data.X, data.y, forward);
@@ -293,14 +351,17 @@ function trainNetworkAnimated(network, data, epochs) {
                 // Update UI every epoch for live animation
                 elements.status.textContent = `Training... Epoch ${epoch}/${epochs}`;
                 elements.trainLoss.textContent = totalLoss.toFixed(4);
+                elements.epochCount.textContent = String(epoch);
 
                 // Draw decision boundary and overlay on training canvas every epoch
+                resizeCanvasToDisplaySize(elements.trainingCanvas);
                 drawDecisionBoundaryAnimated(elements.trainingCanvas, network, currentDataset.trainNormalized, trainingData.rawLabels, currentDataset.colors);
                 drawNetworkArchitecture(elements.networkCanvas, parseHiddenLayers(), currentDataset.numClasses);
 
                 // Yield to browser to render
                 requestAnimationFrame(trainStep);
             } else {
+                elements.stopButton.disabled = true;
                 resolve();
             }
         }
@@ -324,7 +385,8 @@ function drawDataset(canvas, data, labels, colors) {
     const ctx = canvas.getContext('2d');
     const width = canvas.width;
     const height = canvas.height;
-    const scale = width / 2;
+    const zoom = parseFloat(elements.zoom ? elements.zoom.value : 1) || 1;
+    const scale = (width / 2) * zoom;
     const offsetX = width / 2;
     const offsetY = height / 2;
 
@@ -371,7 +433,8 @@ function drawDataset(canvas, data, labels, colors) {
 function drawCanvasGrid(ctx, canvas) {
     const width = canvas.width;
     const height = canvas.height;
-    const scale = width / 2;
+    const zoom = parseFloat(elements.zoom ? elements.zoom.value : 1) || 1;
+    const scale = (width / 2) * zoom;
     const offsetX = width / 2;
     const offsetY = height / 2;
 
@@ -396,7 +459,8 @@ function drawDecisionBoundaryAnimated(canvas, network, data, labels, colors) {
     const ctx = canvas.getContext('2d');
     const width = canvas.width;
     const height = canvas.height;
-    const scale = width / 2;
+    const zoom = parseFloat(elements.zoom ? elements.zoom.value : 1) || 1;
+    const scale = (width / 2) * zoom;
     const offsetX = width / 2;
     const offsetY = height / 2;
     const resolution = 10;
@@ -587,5 +651,9 @@ function drawNetworkArchitecture(canvas, hiddenLayers, outputClasses) {
 window.addEventListener('load', () => {
     updateMoonNoiseValue();
     elements.clusterSpreadValue.textContent = parseFloat(elements.clusterSpread.value).toFixed(3);
+    elements.zoomValue.textContent = parseFloat(elements.zoom.value).toFixed(2);
+    // disable stop/reset until training starts
+    elements.stopButton.disabled = true;
+    elements.resetButton.disabled = true;
     generateAndDisplayDataset();
 });

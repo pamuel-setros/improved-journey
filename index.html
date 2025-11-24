@@ -63,8 +63,16 @@
                     <span id="clusterSpreadValue">0.06</span>
                 </div>
 
+                <div class="control-group">
+                    <label for="zoom">Zoom (scale view):</label>
+                    <input type="range" id="zoom" min="0.5" max="2" step="0.05" value="1">
+                    <span id="zoomValue">1.00</span>
+                </div>
+
                 <button id="trainButton" class="btn-primary">Train Network</button>
                 <button id="testButton" class="btn-secondary">Test on Test Set</button>
+                <button id="stopButton" class="btn-secondary">Stop</button>
+                <button id="resetButton" class="btn-secondary">Reset</button>
             </div>
 
             <div class="visualization-wrapper">
